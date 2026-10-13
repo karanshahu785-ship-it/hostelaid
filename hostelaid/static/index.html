@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HostelAid — Live AI, Database, Auth & SMS System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">✚</div>
+      <div><b>HostelAid</b><small>AUTH • SMS • AI • DATABASE</small></div>
+    </div>
+    <div class="side-label">WORKSPACE</div>
+    <button class="nav active" data-view="overview"><span>◫</span> Overview</button>
+    <button class="nav" data-view="report"><span>＋</span> Report emergency <em class="live-dot"></em></button>
+    <button class="nav" data-view="incidents"><span>▤</span> Incident log <span class="nav-count" id="navCount">0</span></button>
+    <button class="nav" data-view="responders"><span>♙</span> Response team</button>
+    <button class="nav" data-view="contacts" id="navContacts"><span>📞</span> Campus Contacts</button>
+    <button class="nav" data-view="sms"><span>💬</span> SMS Dispatches <span class="nav-count" id="smsCount" style="background:#e0f2fe;color:#0284c7">0</span></button>
+    
+    <div class="side-bottom">
+      <div class="safety-card">
+        <div class="pulse"><span>●</span> System Connected</div>
+        <b>SQLite & SMS Live</b>
+        <p>Authenticated profiles & automated SMS broadcast enabled.</p>
+        <span class="db-pill">hostelaid.db ✓</span>
+      </div>
+      <div class="profile" id="sidebarProfile" onclick="handleProfileClick()">
+        <div class="avatar" id="sidebarAvatar">WA</div>
+        <div>
+          <b id="sidebarName">Hostel Admin</b>
+          <small id="sidebarRole">Warden desk</small>
+        </div>
+        <button style="border:0;background:none;color:#8c94a8;cursor:pointer;margin-left:auto" onclick="event.stopPropagation();openSettingsModal()" title="System Settings">⚙</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow" id="topEyebrow">CAMPUS SAFETY NETWORK <span class="status-pill"><i></i> LIVE SERVER ONLINE</span></div>
+        <h1 id="pageTitle">Good evening, Warden <span>✦</span></h1>
+        <p id="pageSub">A clearer view of incidents. Powered by SQLite, SMS & AI Triage.</p>
+      </div>
+      <div class="top-actions">
+        <button class="user-btn" id="userAuthBtn" onclick="handleProfileClick()" title="User Account">
+          <span class="avatar" id="topAvatar" style="width:26px;height:26px;font-size:10px">?</span>
+          <span id="userNameRole">Sign In</span>
+        </button>
+        <button class="ai-config-btn" id="aiStatusBtn" onclick="openSettingsModal()" title="Configure AI & SMS">
+          <span class="dot"></span> <span id="aiStatusText">✦ AI Engine</span> ⚙
+        </button>
+        <div class="date-chip">◷ <span id="today"></span></div>
+        <button class="icon-btn" title="Refresh data" onclick="loadAllData(true)">↻</button>
+      </div>
+    </header>
+
+    <!-- Overview View -->
+    <section id="view-overview" class="view">
+      <div class="hero">
+        <div class="hero-copy">
+          <div class="hero-tag" id="heroTag">✦ USER PROFILES • AUTO-SMS • AI TRIAGE • SQLITE</div>
+          <h2 id="heroTitle">Every second matters.<br><span>Make every alert count.</span></h2>
+          <p id="heroDesc">Instant SMS dispatch to emergency leads, authenticated student/warden profiles, and real-time AI emergency triage powered by Google Gemini.</p>
+          <div class="hero-actions">
+            <button class="primary" id="heroActionBtn" onclick="showView('report')">＋ Report an emergency <span>→</span></button>
+            <button class="secondary-hero" onclick="showView('sms')">💬 View SMS Logs</button>
+            <button class="secondary-hero" onclick="openSettingsModal()">⚙ Settings</button>
+          </div>
+        </div>
+        <div class="hero-art">
+          <div class="orb orb1"></div>
+          <div class="orb orb2"></div>
+          <div class="phone">
+            <div class="phone-head"><span>HOSTELAID LIVE</span><span>•••</span></div>
+            <div class="phone-alert">✚</div>
+            <b>Help is on the way</b>
+            <small id="heroLastId">Incident Active</small>
+            <div class="phone-line"></div>
+            <div class="phone-row"><span>● User verified</span><b>✓</b></div>
+            <div class="phone-row"><span>● SMS Dispatched</span><b>✓</b></div>
+            <div class="phone-row"><span>● Responder ready</span><b>→</b></div>
+          </div>
+          <div class="floating-note">
+            <span>✦</span>
+            <div><b>Auto-SMS Active</b><small id="heroEngineTag">Twilio / Simulation</small></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Prominent SOS Direct Call Banner for Students & Residents -->
+      <div class="sos-banner" id="sosWardenBanner">
+        <div class="sos-banner-left">
+          <div class="sos-icon">📞</div>
+          <div>
+            <b>Immediate Emergency? Direct Line to Warden Active</b>
+            <p>Direct priority line to Hostel Duty Warden (Aarav Sharma) · 24/7 Response Desk</p>
+          </div>
+        </div>
+        <a href="tel:+919876543210" class="btn-call-sos" onclick="toast('Initiating direct call to Warden: +91 98765 43210')">
+          📞 Call Warden Directly: +91 98765 43210
+        </a>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-top"><span id="stat1Title">Open incidents</span><span class="stat-icon red">↗</span></div>
+          <div class="stat-num" id="openStat">0</div>
+          <div class="stat-foot"><b class="red-text">Live SQLite</b><span>Needs attention</span></div>
+        </div>
+        <div class="stat">
+          <div class="stat-top"><span>SMS Dispatches</span><span class="stat-icon blue">💬</span></div>
+          <div class="stat-num" id="smsStat">0</div>
+          <div class="stat-foot"><b class="green-text">Automated</b><span>Audit broadcast</span></div>
+        </div>
+        <div class="stat">
+          <div class="stat-top"><span>Responders available</span><span class="stat-icon purple">♙</span></div>
+          <div class="stat-num" id="availStat">0<span class="unit">/0</span></div>
+          <div class="stat-foot"><b class="green-text" id="readinessFoot">100% ready</b><span>Across campus</span></div>
+        </div>
+        <div class="stat">
+          <div class="stat-top"><span id="stat4Title">Registered users</span><span class="stat-icon green">👥</span></div>
+          <div class="stat-num" id="usersStat">0</div>
+          <div class="stat-foot" id="stat4Foot"><b class="green-text">Authenticated</b><span>Hostel residents</span></div>
+        </div>
+      </div>
+
+      <div class="section-heading">
+        <div>
+          <h3 id="liveBoardTitle">Live incident board</h3>
+          <p>Real-time records from SQLite database</p>
+        </div>
+        <button class="text-btn" onclick="showView('incidents')">View full incident log →</button>
+      </div>
+
+      <div class="incident-list" id="incidentList"></div>
+
+      <div class="bottom-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3>Response readiness</h3>
+              <p>Network availability across campus</p>
+            </div>
+            <span class="more">•••</span>
+          </div>
+          <div class="readiness">
+            <div class="donut" id="readinessDonut">
+              <div><b id="donutPercent">80%</b><small>READY</small></div>
+            </div>
+            <div class="readiness-legend">
+              <div><i class="green-bg"></i><span>Available</span><b id="legendAvail">0</b></div>
+              <div><i class="yellow-bg"></i><span>On incident</span><b id="legendBusy">0</b></div>
+              <div><i class="gray-bg"></i><span>Offline</span><b id="legendOffline">0</b></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3>Emergency Contacts & Speed Dial</h3>
+              <p>Direct phone numbers with 1-click calling & SMS</p>
+            </div>
+            <button class="text-btn" onclick="showView('contacts')">View All Directory →</button>
+          </div>
+          <div id="overviewQuickContactsList">
+            <div class="contact">
+              <div class="contact-icon blue">♙</div>
+              <div>
+                <b>Hostel Duty Warden</b>
+                <small>Aarav Sharma · +91 98765 43210</small>
+              </div>
+              <div class="contact-actions">
+                <a href="tel:+919876543210" class="btn-call" onclick="toast('Calling Warden: +91 98765 43210')">📞 Call</a>
+                <button onclick="dispatchQuickSms('+91 98765 43210', 'Emergency check requested by student at warden desk.')">💬 SMS</button>
+              </div>
+            </div>
+            <div class="contact">
+              <div class="contact-icon red">✚</div>
+              <div>
+                <b>Campus Medical Doctor</b>
+                <small>Dr. Meera Joshi · +91 98765 43211</small>
+              </div>
+              <div class="contact-actions">
+                <a href="tel:+919876543211" class="btn-call" onclick="toast('Calling Doctor: +91 98765 43211')">📞 Call</a>
+                <button onclick="dispatchQuickSms('+91 98765 43211', 'Medical first-aid doctor requested by student.')">💬 SMS</button>
+              </div>
+            </div>
+            <div class="contact">
+              <div class="contact-icon purple">⌂</div>
+              <div>
+                <b>Campus Security & Police</b>
+                <small>Rohan Patil · +91 98765 43212</small>
+              </div>
+              <div class="contact-actions">
+                <a href="tel:+919876543212" class="btn-call" onclick="toast('Calling Security: +91 98765 43212')">📞 Call</a>
+                <button onclick="dispatchQuickSms('+91 98765 43212', 'Campus security verification alerted by student.')">💬 SMS</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="disclaimer">
+        ⓘ Full working system with Authentication, SQLite persistence, automated SMS alert broadcasts, and AI triage API. Always contact local emergency services immediately for life-threatening situations.
+      </div>
+    </section>
+
+    <!-- Report Emergency View -->
+    <section id="view-report" class="view hidden">
+      <div class="section-heading">
+        <div>
+          <h3>Report an emergency</h3>
+          <p>Details are processed by AI Triage, saved in SQLite, and trigger automated SMS alerts.</p>
+        </div>
+        <span class="step-pill">STEP 01 / 02</span>
+      </div>
+
+      <div class="urgent-call-bar" id="reportUrgentCallBar">
+        <div>
+          <b>🚨 Critical Life Threat or Severe Injury?</b>
+          <span style="font-size:11px;color:#9f1239;margin-left:6px">Don't wait for form entry — call the warden directly:</span>
+        </div>
+        <a href="tel:+919876543210" onclick="toast('Connecting to Duty Warden: +91 98765 43210')">📞 Call Warden Now (+91 98765 43210)</a>
+      </div>
+
+      <div class="report-layout">
+        <form id="reportForm" class="panel form-panel">
+          <div class="form-section-title">
+            <span>01</span>
+            <div><b>Incident details</b><small>What is happening right now?</small></div>
+          </div>
+
+          <label>Emergency type <span>*</span></label>
+          <div class="type-grid">
+            <label class="type-option selected">
+              <input type="radio" name="type" value="Medical" checked>
+              <span>✚</span><b>Medical</b><small>Injury / illness</small>
+            </label>
+            <label class="type-option">
+              <input type="radio" name="type" value="Fire">
+              <span>♨</span><b>Fire / smoke</b><small>Fire or hazard</small>
+            </label>
+            <label class="type-option">
+              <input type="radio" name="type" value="Safety">
+              <span>⚑</span><b>Safety</b><small>Threat / security</small>
+            </label>
+            <label class="type-option">
+              <input type="radio" name="type" value="Disaster">
+              <span>⌁</span><b>Disaster</b><small>Flood / earthquake</small>
+            </label>
+          </div>
+
+          <label for="details">Describe what happened <span>*</span></label>
+          <textarea id="details" required placeholder="Example: A student fainted near the ground-floor common room. They are conscious but dizzy and breathing rapidly…"></textarea>
+          <div class="hint">Be factual. Live AI evaluates urgency, provides bystander steps, and sends automated SMS alerts to responders.</div>
+
+          <div class="form-row">
+            <div>
+              <label for="location">Location <span>*</span></label>
+              <select id="location" required>
+                <option value="">Select hostel / location</option>
+                <option>Block A · Ground floor</option>
+                <option>Block A · Floor 1</option>
+                <option>Block B · Floor 2</option>
+                <option>Block B · Floor 3</option>
+                <option>Mess / dining hall</option>
+                <option>Sports ground</option>
+                <option>Hostel entrance / Gate</option>
+                <option>Library / Study room</option>
+                <option>Other / unknown</option>
+              </select>
+            </div>
+            <div>
+              <label for="people">People affected</label>
+              <select id="people">
+                <option>1 person</option>
+                <option>2–3 people</option>
+                <option>4–10 people</option>
+                <option>More than 10</option>
+                <option>Unknown</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div>
+              <label for="reporter">Your name / role</label>
+              <input id="reporter" placeholder="e.g. Rahul Verma (Room 204)">
+            </div>
+            <div>
+              <label for="callback">Callback phone number (for SMS updates)</label>
+              <input id="callback" placeholder="+91 98765 00000" inputmode="tel">
+            </div>
+          </div>
+
+          <div class="form-section-title second">
+            <span>02</span>
+            <div><b>AI-assisted Triage & SMS Dispatch</b><small>Real-time triage via Google Gemini / OpenAI</small></div>
+          </div>
+
+          <div class="ai-preview-box">
+            <div class="ai-preview-header">
+              <span class="ai-engine-tag" id="triageEngineTag">✦ AI Standby</span>
+              <span class="priority medium" id="triagePriorityBadge">Medium priority</span>
+            </div>
+            <div class="ai-preview-body">
+              <b id="triageTitle">Ready to assess details</b>
+              <p id="triageRationale">Enter an emergency description above to get an instant AI evaluation.</p>
+              <div class="ai-guidance-card" id="firstAidCard" style="display:none;">
+                <b>✚ Immediate Bystander Guidance:</b>
+                <p id="firstAidText"></p>
+              </div>
+            </div>
+          </div>
+
+          <label class="check-row">
+            <input type="checkbox" id="confirm" required>
+            <span>I confirm this incident information is genuine. An automated SMS alert will be broadcast to on-duty hostel emergency responders.</span>
+          </label>
+
+          <div class="form-actions">
+            <button type="button" class="secondary" onclick="showView('overview')">Cancel</button>
+            <button class="primary" type="submit" id="btnSubmitIncident">Create Incident & Broadcast SMS <span>→</span></button>
+          </div>
+        </form>
+
+        <aside class="right-rail">
+          <div class="panel guidance">
+            <div class="guide-icon">✦</div>
+            <h3>Intelligent triage.<br>Instant SMS broadcast.</h3>
+            <p>HostelAid links student profiles with on-duty wardens and doctors through automated SMS.</p>
+            <div class="guide-step">
+              <span>1</span>
+              <div><b>User Authenticated</b><small>Resident location & medical notes</small></div>
+            </div>
+            <div class="guide-step">
+              <span>2</span>
+              <div><b>AI Triage Assessment</b><small>Priority + Immediate Guidance</small></div>
+            </div>
+            <div class="guide-step">
+              <span>3</span>
+              <div><b>Automated SMS Alert</b><small>Sent directly to Warden & Doctor</small></div>
+            </div>
+            <div class="urgent-box">
+              <b>Acute Life-Threatening Crisis?</b>
+              <p>Immediately call Campus Security (+91 100/108/112) and alert the nearest warden.</p>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Incident Log View -->
+    <section id="view-incidents" class="view hidden">
+      <div class="section-heading">
+        <div>
+          <h3>Incident log (Database)</h3>
+          <p>Searchable, timestamped records stored persistently in SQLite.</p>
+        </div>
+        <button class="primary" onclick="showView('report')">＋ New incident</button>
+      </div>
+      <div class="panel">
+        <div class="table-toolbar">
+          <input id="searchIncidents" placeholder="⌕  Search incidents by ID, title, location, type...">
+          <select id="filterStatus">
+            <option value="All">All statuses</option>
+            <option value="Open">Open</option>
+            <option value="Responding">Responding</option>
+            <option value="Resolved">Resolved</option>
+          </select>
+        </div>
+        <div id="fullIncidentList"></div>
+      </div>
+    </section>
+
+    <!-- Responders View -->
+    <section id="view-responders" class="view hidden">
+      <div class="section-heading">
+        <div>
+          <h3>Response network</h3>
+          <p>On-duty staff & emergency personnel from database.</p>
+        </div>
+        <span class="step-pill">LIVE DB ROSTER</span>
+      </div>
+      <div class="responder-grid" id="responderGrid"></div>
+      <div class="panel">
+        <h3>Campus Incident Response Protocol</h3>
+        <p class="muted">Standard operating procedure for hostel wardens and emergency team.</p>
+        <div class="checklist">
+          <div>✓ <span>Verify location details and confirm clear access route</span></div>
+          <div>✓ <span>Designate one primary incident lead (Warden / Doctor)</span></div>
+          <div>✓ <span>Communicate immediate bystander safety instructions</span></div>
+          <div>✓ <span>Send SMS notification and log handoff in the audit trail</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Campus Emergency Contacts & Direct Calling Directory (Visible to Students) -->
+    <section id="view-contacts" class="view hidden">
+      <div class="section-heading">
+        <div>
+          <h3>Campus Emergency Contacts & Speed Dial</h3>
+          <p>Direct telephone lines to hostel wardens, doctors, and security personnel. All numbers editable in database.</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="primary" id="btnAddContactHeader" onclick="openAddContactModal()">＋ Add Contact</button>
+          <span class="step-pill" style="background:#fee2e2;color:#b91c1c">24/7 ACTIVE LINES</span>
+        </div>
+      </div>
+
+      <!-- Quick Call Banner on Directory Page -->
+      <div class="sos-banner">
+        <div class="sos-banner-left">
+          <div class="sos-icon">📞</div>
+          <div>
+            <b>Need to speak to the Warden immediately?</b>
+            <p id="directoryWardenSubtitle">Direct priority line to Hostel Duty Warden desk (Block A & Campus Central).</p>
+          </div>
+        </div>
+        <a href="tel:+919876543210" class="btn-call-sos" id="directoryWardenCallBtn" onclick="toast('Calling Hostel Duty Warden...')">
+          📞 Call Warden Now: +91 98765 43210
+        </a>
+      </div>
+
+      <div class="responder-grid" id="contactsDirectoryGrid"></div>
+
+      <div class="panel" style="margin-top:18px">
+        <h3>Campus 24/7 National Emergency Helplines</h3>
+        <p class="muted">For external police, ambulance, or municipal fire departments.</p>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px">
+          <div style="background:#fff1f2;padding:12px;border-radius:10px;border:1px solid #fecdd3">
+            <b style="color:#9f1239;font-size:12px">🚑 Ambulance / EMS</b>
+            <p style="margin:4px 0 8px;font-size:11px;color:#be123c">Toll-free emergency: 108 / 102</p>
+            <a href="tel:108" class="btn-call" style="background:#e11d48;color:#fff;border-color:#e11d48">📞 Call 108</a>
+          </div>
+          <div style="background:#eff6ff;padding:12px;border-radius:10px;border:1px solid #bfdbfe">
+            <b style="color:#1e40af;font-size:12px">🚓 Police Control Room</b>
+            <p style="margin:4px 0 8px;font-size:11px;color:#1d4ed8">National emergency: 112 / 100</p>
+            <a href="tel:112" class="btn-call" style="background:#2563eb;color:#fff;border-color:#2563eb">📞 Call 112</a>
+          </div>
+          <div style="background:#fffbeb;padding:12px;border-radius:10px;border:1px solid #fde68a">
+            <b style="color:#92400e;font-size:12px">🚒 Fire Rescue Service</b>
+            <p style="margin:4px 0 8px;font-size:11px;color:#b45309">Emergency fire station: 101</p>
+            <a href="tel:101" class="btn-call" style="background:#d97706;color:#fff;border-color:#d97706">📞 Call 101</a>
+          </div>
+        </div>
+      </div>
+
+    <!-- SMS Dispatches View -->
+    <section id="view-sms" class="view hidden">
+      <div class="section-heading">
+        <div>
+          <h3>SMS Emergency Dispatches</h3>
+          <p>Real-time audit log of outgoing SMS alerts to wardens, medical responders, and students.</p>
+        </div>
+        <button class="primary" onclick="openSendSmsModal()">＋ Send On-Demand SMS</button>
+      </div>
+      <div class="panel">
+        <div id="fullSmsList"></div>
+      </div>
+    </section>
+
+    <footer>
+      HOSTELAID · FULL WORKING MODEL (AUTH + SMS + SQLITE + AI)
+      <span>Database: hostelaid.db · SMS Engine Live · REST API Online</span>
+    </footer>
+  </main>
+</div>
+
+<!-- Toast notification -->
+<div id="toast" class="toast"></div>
+
+<!-- Incident Detail Modal -->
+<div id="detailModal" class="modal hidden">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<!-- Authentication Modal (Sign In / Register) -->
+<div id="authModal" class="modal hidden">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeAuthModal()">×</button>
+    <div class="eyebrow">RESIDENT & STAFF ACCESS</div>
+    <h3 id="authModalTitle">Sign In to HostelAid</h3>
+
+    <div class="modal-tabs">
+      <button class="modal-tab active" id="tabLogin" onclick="switchAuthTab('login')">Sign In</button>
+      <button class="modal-tab" id="tabRegister" onclick="switchAuthTab('register')">Register New Account</button>
+    </div>
+
+    <!-- Quick Demo Logins -->
+    <div id="quickDemoLogins" style="background:#f8f9fe;border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin:12px 0 16px">
+      <small style="color:#475569;font-weight:800;display:block;margin-bottom:8px">⚡ SELECT A ROLE TO START (1-CLICK SIGN IN):</small>
+      <div class="demo-logins" style="grid-template-columns:1fr;gap:8px">
+        <button type="button" class="demo-login-btn" style="text-align:left;padding:10px 12px;display:flex;align-items:center;gap:10px" onclick="quickLogin('warden@hostel.edu', 'warden123')">
+          <span style="font-size:18px">👤</span>
+          <div>
+            <b style="display:block;color:#1e293b;font-size:11px">Hostel Warden (Aarav Sharma)</b>
+            <small style="color:#64748b">Master Incident Command, All Blocks & Wing Triage</small>
+          </div>
+        </button>
+        <button type="button" class="demo-login-btn" style="text-align:left;padding:10px 12px;display:flex;align-items:center;gap:10px" onclick="quickLogin('doctor@hostel.edu', 'doctor123')">
+          <span style="font-size:18px">🩺</span>
+          <div>
+            <b style="display:block;color:#1e293b;font-size:11px">Medical Doctor (Dr. Meera Joshi)</b>
+            <small style="color:#64748b">Clinical Triage, Patient Allergy History & First-Aid</small>
+          </div>
+        </button>
+        <button type="button" class="demo-login-btn" style="text-align:left;padding:10px 12px;display:flex;align-items:center;gap:10px" onclick="quickLogin('student@hostel.edu', 'student123')">
+          <span style="font-size:18px">🎓</span>
+          <div>
+            <b style="display:block;color:#1e293b;font-size:11px">Resident Student (Rahul Verma · Room 204)</b>
+            <small style="color:#64748b">Emergency Reporting Portal & Live Status Tracker</small>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Login Form -->
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <label style="display:block;font-size:11px;font-weight:700;margin:10px 0 4px">Email Address</label>
+      <input type="email" id="loginEmail" class="modal-input" required placeholder="name@hostel.edu">
+
+      <label style="display:block;font-size:11px;font-weight:700;margin:12px 0 4px">Password</label>
+      <input type="password" id="loginPassword" class="modal-input" required placeholder="Enter password">
+
+      <div class="modal-actions" style="margin-top:20px;justify-content:flex-end">
+        <button type="button" onclick="closeAuthModal()">Cancel</button>
+        <button type="submit" class="btn-primary" id="btnLoginSubmit">Sign In <span>→</span></button>
+      </div>
+    </form>
+
+    <!-- Register Form -->
+    <form id="registerForm" style="display:none" onsubmit="handleRegister(event)">
+      <label style="display:block;font-size:11px;font-weight:700;margin:8px 0 4px">Full Name <span>*</span></label>
+      <input type="text" id="regName" class="modal-input" required placeholder="e.g. Rahul Verma">
+
+      <div class="form-row" style="margin-top:0">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;margin:8px 0 4px">Email Address <span>*</span></label>
+          <input type="email" id="regEmail" class="modal-input" required placeholder="student@hostel.edu">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;margin:8px 0 4px">Password <span>*</span></label>
+          <input type="password" id="regPassword" class="modal-input" required minlength="6" placeholder="At least 6 chars">
+        </div>
+      </div>
+
+      <div class="form-row" style="margin-top:0">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;margin:8px 0 4px">Role</label>
+          <select id="regRole" class="modal-input">
+            <option value="student">Student / Resident</option>
+            <option value="warden">Hostel Warden</option>
+            <option value="responder">Medical / Security Responder</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;margin:8px 0 4px">Phone Number (for SMS) <span>*</span></label>
+          <input type="tel" id="regPhone" class="modal-input" required placeholder="+91 98765 00000">
+        </div>
+      </div>
+
+      <div class="form-row" style="margin-top:0">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;margin:8px 0 4px">Hostel Block</label>
+          <input type="text" id="regBlock" class="modal-input" placeholder="e.g. Block A">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;margin:8px 0 4px">Room Number</label>
+          <input type="text" id="regRoom" class="modal-input" placeholder="e.g. Room 204">
+        </div>
+      </div>
+
+      <div class="form-row" style="margin-top:0">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;margin:8px 0 4px">Emergency Contact Name</label>
+          <input type="text" id="regEcName" class="modal-input" placeholder="Parent / Guardian Name">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;margin:8px 0 4px">Emergency Contact Phone</label>
+          <input type="tel" id="regEcPhone" class="modal-input" placeholder="+91 98765 99999">
+        </div>
+      </div>
+
+      <label style="display:block;font-size:11px;font-weight:700;margin:8px 0 4px">Medical Notes / Allergies (Optional)</label>
+      <input type="text" id="regMed" class="modal-input" placeholder="e.g. Asthma, Penicillin allergy, Blood Group O+">
+
+      <div class="modal-actions" style="margin-top:18px;justify-content:flex-end">
+        <button type="button" onclick="closeAuthModal()">Cancel</button>
+        <button type="submit" class="btn-primary" id="btnRegSubmit">Create Account <span>→</span></button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Profile Drawer Modal -->
+<div id="profileModal" class="modal hidden">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeProfileModal()">×</button>
+    <div class="eyebrow">YOUR PROFILE</div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+      <div class="avatar big" id="modalProfAvatar">WA</div>
+      <div>
+        <h3 style="margin-bottom:2px" id="modalProfName">User Name</h3>
+        <span class="role-badge" id="modalProfRole">Role</span>
+      </div>
+    </div>
+
+    <form id="profileForm" onsubmit="handleProfileUpdate(event)">
+      <div class="form-row">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;margin:8px 0 4px">Full Name / Username <span>*</span></label>
+          <input type="text" id="profNameInput" class="modal-input" required placeholder="Enter your name">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;margin:8px 0 4px">Phone Number (Emergency Line) <span>*</span></label>
+          <input type="tel" id="profPhone" class="modal-input" required placeholder="+91 98765 00000">
+        </div>
+      </div>
+      <small id="wardenPhoneNotice" style="display:none;color:#0284c7;font-size:10px;margin-bottom:8px">💡 Notice: As Warden, changing your phone number here immediately updates the 24/7 SOS Direct Call line for all students.</small>
+
+      <div class="form-row">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;margin:8px 0 4px">Hostel Block</label>
+          <input type="text" id="profBlock" class="modal-input">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;margin:8px 0 4px">Room Number</label>
+          <input type="text" id="profRoom" class="modal-input">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;margin:8px 0 4px">Emergency Contact Name</label>
+          <input type="text" id="profEcName" class="modal-input">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;margin:8px 0 4px">Emergency Contact Phone</label>
+          <input type="tel" id="profEcPhone" class="modal-input">
+        </div>
+      </div>
+
+      <label style="display:block;font-size:11px;font-weight:700;margin:8px 0 4px">Medical Notes & Blood Group</label>
+      <input type="text" id="profMed" class="modal-input">
+
+      <div class="modal-actions" style="margin-top:20px;justify-content:space-between">
+        <button type="button" class="btn-danger" onclick="handleLogout()">Sign Out ✕</button>
+        <div>
+          <button type="button" onclick="closeProfileModal()">Close</button>
+          <button type="submit" class="btn-primary">Save Changes</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Settings & API Key & SMS Modal -->
+<div id="settingsModal" class="modal hidden">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeSettingsModal()">×</button>
+    <div class="eyebrow">CONFIGURATION & INTEGRATIONS</div>
+    <h3>System Integrations & API Keys</h3>
+
+    <div class="modal-tabs">
+      <button class="modal-tab active" id="tabAiSettings" onclick="switchSettingsTab('ai')">✦ AI Triage (Gemini / OpenAI)</button>
+      <button class="modal-tab" id="tabSmsSettings" onclick="switchSettingsTab('sms')">💬 SMS Gateway (Twilio / Fast2SMS)</button>
+    </div>
+
+    <!-- AI Settings Tab -->
+    <div id="settingsSectionAi">
+      <div class="settings-form">
+        <label for="aiProvider">AI Provider</label>
+        <select id="aiProvider" onchange="onProviderChange()">
+          <option value="gemini">Google Gemini (Recommended - Fast & Free tier)</option>
+          <option value="openai">OpenAI (GPT-4o / GPT-4o-mini)</option>
+        </select>
+
+        <label for="aiApiKey">API Key</label>
+        <input type="password" id="aiApiKey" placeholder="Enter API Key (e.g. AIzaSy... or sk-...)">
+
+        <label for="aiModel">Model Name</label>
+        <input type="text" id="aiModel" value="gemini-1.5-flash" placeholder="gemini-1.5-flash or gpt-4o-mini">
+
+        <div class="settings-tip">
+          ✦ <b>Need a Gemini API key?</b> Get one for free at 
+          <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>.
+          Keys are stored securely in SQLite settings.
+        </div>
+
+        <div id="testResult" class="test-result"></div>
+
+        <div class="modal-actions" style="margin-top:18px;justify-content:flex-end;">
+          <button type="button" onclick="testApiKey()" id="btnTestKey">Test Connection ⚡</button>
+          <button type="button" class="btn-primary" onclick="saveApiKey()" id="btnSaveKey">Save & Connect 💾</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SMS Settings Tab -->
+    <div id="settingsSectionSms" style="display:none">
+      <div class="settings-form">
+        <label for="smsProvider">SMS Provider</label>
+        <select id="smsProvider" onchange="onSmsProviderChange()">
+          <option value="simulation">High-Fidelity Simulation Mode (No Carrier Balance Required)</option>
+          <option value="twilio">Twilio Cloud SMS Gateway</option>
+          <option value="fast2sms">Fast2SMS (Quick DLT-free India Gateway)</option>
+        </select>
+
+        <div id="twilioFields">
+          <label for="twilioSid">Twilio Account SID</label>
+          <input type="text" id="twilioSid" placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+
+          <label for="twilioToken">Twilio Auth Token</label>
+          <input type="password" id="twilioToken" placeholder="Paste Auth Token">
+
+          <label for="twilioFrom">Twilio Phone Number (Sender)</label>
+          <input type="text" id="twilioFrom" placeholder="+1xxxxxxxxxx">
+        </div>
+
+        <div id="fast2smsFields" style="display:none">
+          <label for="fast2smsKey">Fast2SMS API Authorization Key</label>
+          <input type="password" id="fast2smsKey" placeholder="Paste Fast2SMS Key">
+        </div>
+
+        <div class="settings-tip">
+          💬 <b>Simulation Mode</b> saves all outgoing SMS broadcasts directly to the database audit trail with simulated carrier delivery, allowing full end-to-end testing without paying for SMS credits!
+        </div>
+
+        <div id="smsTestResult" class="test-result"></div>
+
+        <div class="modal-actions" style="margin-top:18px;justify-content:flex-end;">
+          <button type="button" onclick="testSmsSend()" id="btnTestSms">Send Test SMS 💬</button>
+          <button type="button" class="btn-primary" onclick="saveSmsConfig()" id="btnSaveSms">Save SMS Gateway 💾</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Send On-Demand SMS Modal -->
+<div id="sendSmsModal" class="modal hidden">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeSendSmsModal()">×</button>
+    <div class="eyebrow">EMERGENCY BROADCAST</div>
+    <h3>Send On-Demand SMS Alert</h3>
+    <form onsubmit="handleSendOnDemandSms(event)">
+      <label style="display:block;font-size:11px;font-weight:700;margin:10px 0 4px">Recipient Phone Number</label>
+      <input type="tel" id="manualSmsPhone" class="modal-input" required placeholder="+91 98765 00000">
+
+      <label style="display:block;font-size:11px;font-weight:700;margin:12px 0 4px">Recipient Name / Role</label>
+      <input type="text" id="manualSmsName" class="modal-input" placeholder="e.g. Block A Warden">
+
+      <label style="display:block;font-size:11px;font-weight:700;margin:12px 0 4px">Emergency Message</label>
+      <textarea id="manualSmsMessage" class="modal-input" style="min-height:80px" required placeholder="[HOSTELAID ALERT] Urgent welfare check required..."></textarea>
+
+      <div class="modal-actions" style="margin-top:18px;justify-content:flex-end">
+        <button type="button" onclick="closeSendSmsModal()">Cancel</button>
+        <button type="submit" class="btn-primary" id="btnManualSms">Send SMS Broadcast 🚀</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Emergency Contact Modal -->
+<div id="editContactModal" class="modal hidden">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeEditContactModal()">×</button>
+    <div class="eyebrow">EMERGENCY DIRECTORY MANAGEMENT</div>
+    <h3 id="editContactModalTitle">Edit Emergency Contact</h3>
+    <p>Update phone number, responder username, and on-call role in the live database.</p>
+
+    <form id="editContactForm" onsubmit="handleSaveContact(event)">
+      <input type="hidden" id="editContactId">
+
+      <label style="display:block;font-size:11px;font-weight:700;margin:10px 0 4px">Contact / Responder Name (Username) <span>*</span></label>
+      <input type="text" id="editContactName" class="modal-input" required placeholder="e.g. Aarav Sharma">
+
+      <label style="display:block;font-size:11px;font-weight:700;margin:12px 0 4px">Emergency Phone Number (Direct Dial & SMS) <span>*</span></label>
+      <input type="tel" id="editContactPhone" class="modal-input" required placeholder="+91 98765 43210">
+
+      <label style="display:block;font-size:11px;font-weight:700;margin:12px 0 4px">Role / Designation <span>*</span></label>
+      <input type="text" id="editContactRole" class="modal-input" required placeholder="e.g. Hostel Warden · Block A">
+
+      <label style="display:block;font-size:11px;font-weight:700;margin:12px 0 4px">Emergency Skills / Department</label>
+      <input type="text" id="editContactSkills" class="modal-input" placeholder="e.g. Incident lead · Evacuation coordination">
+
+      <div class="form-row" style="margin-top:0">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;margin:12px 0 4px">Availability Status</label>
+          <select id="editContactState" class="modal-input">
+            <option value="Available">Available (On Duty)</option>
+            <option value="On incident">On incident (Busy)</option>
+            <option value="Offline">Offline</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;padding-top:24px">
+          <label class="check-row" style="margin-top:0">
+            <input type="checkbox" id="editContactIsPrimaryWarden">
+            <span>Set as Primary SOS Warden Line</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top:22px;justify-content:space-between">
+        <button type="button" class="btn-danger" id="btnDeleteContact" onclick="handleDeleteContact()">Delete Contact ✕</button>
+        <div>
+          <button type="button" onclick="closeEditContactModal()">Cancel</button>
+          <button type="submit" class="btn-primary" id="btnSaveContact">Save Contact 💾</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
